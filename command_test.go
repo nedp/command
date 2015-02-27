@@ -46,7 +46,8 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	// Set up the sequence mock according to parameters.
 	runAller := new(runAllerMock)
 	runAller.duration = duration
-	c := New(runAller)
+	output := make(chan string)
+	c := New(runAller, output)
 	runAller.On("RunAll", c.status).Return(c.status).Once()
 	runAller.duration = duration
 
@@ -77,6 +78,10 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 
 	// Verify expectations
 	runAller.AssertExpectations(t)
+
+	// Verify Output
+	assert.Equal(t, (<-chan string)(output), c.Output(),
+		"The wrong output channel was returned from c.Output")
 }
 
 const shortDuration = time.Duration(50) * time.Millisecond

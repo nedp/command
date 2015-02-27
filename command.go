@@ -10,10 +10,11 @@ import (
 type Command struct {
 	status status.Interface
 	runAller sequence.RunAller
+	output <-chan string
 }
 
-func New(runAller sequence.RunAller) *Command {
-	return &Command{status.New(), runAller}
+func New(runAller sequence.RunAller, output <-chan string) *Command {
+	return &Command{status.New(), runAller, output}
 }
 
 // A wrapper for sequence.RunAll
@@ -37,6 +38,7 @@ func (c *Command) Kill() error {
 	return c.status.Fail()
 }
 
+// TODO document
 func (c *Command) WhenTerminated() <-chan time.Time {
 	ch := make(chan time.Time)
 	go func(ch chan<- time.Time) {
@@ -47,4 +49,9 @@ func (c *Command) WhenTerminated() <-chan time.Time {
 		close(ch)
 	}((chan<- time.Time)(ch))
 	return (<-chan time.Time)(ch)
+}
+
+// TODO document
+func (c *Command) Output() <-chan string {
+	return c.output
 }
