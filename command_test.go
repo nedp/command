@@ -57,7 +57,7 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	start := time.Now()
 	ch := make(chan bool)
 	go func() {
-		ch <- c.Run()
+		ch <- c.Run(make(chan string))
 	}()
 	fuse := time.After(duration * time.Duration(11) / time.Duration(10))
 

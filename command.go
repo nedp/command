@@ -13,12 +13,20 @@ type Command struct {
 	output <-chan string
 }
 
+// TODO document
 func New(runAller sequence.RunAller, output <-chan string) *Command {
 	return &Command{status.New(), runAller, output}
 }
 
 // A wrapper for sequence.RunAll
-func (c *Command) Run() bool {
+// TODO document outCh
+func (c *Command) Run(outCh chan<- string) bool {
+	go func(outCh chan<- string) {
+		for s := range c.output {
+			outCh <- s
+		}
+	}(outCh)
+
 	c.status = c.runAller.RunAll(c.status)
 	return !c.status.HasFailed()
 }
