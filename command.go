@@ -7,25 +7,61 @@ import (
 	"bitbucket.org/nedp/command/sequence"
 )
 
+
+type Interface interface {
+	Runner
+	Pauser
+	Stopper
+	Output() []string
+}
+
+type Runner interface {
+	Run(chan<- string) bool
+}
+
+type Pauser interface {
+	Pause() (bool, error)
+	Cont() (bool, error)
+}
+
+type Stopper interface {
+	Stop() error
+	WhenStopped() <-chan Time.time
+}
+
 type Command struct {
 	status status.Interface
 	runAller sequence.RunAller
-	output <-chan string
+	outputLog logger
 }
 
 // TODO document
-func New(runAller sequence.RunAller, output <-chan string) *Command {
-	return &Command{status.New(), runAller, output}
+func New(runAller sequence.RunAller, seqOut <-chan string, nOutputs int) Interface {
+	var lg logger
+	if nOutputs < 0 {
+		lg = newLogger(seqOut)
+	} else {
+		lg = newLoggerWithCap(seqOut, nOutputs)
+	}
+	return &Command{status.New(), runAller, lg}
 }
 
-// A wrapper for sequence.RunAll
-// TODO document outCh
+// Run calls RunAll on the command's RunAller, having the
+// command's logger record and forward output from the
+// sequence to outCh.
+//
+// The logger will stop recording output when the RunAller
+// is no longer running.
+//
+// Returns
+// true if the status is fine;
+// false if there has been a failure.
 func (c *Command) Run(outCh chan<- string) bool {
-	go func(outCh chan<- string) {
-		for s := range c.output {
-			outCh <- s
-		}
-	}(outCh)
+	go c.lg.listen(outCh)
+	go func() {
+		<-c.WhenStopped()
+		lg.stop()
+	}(lg)
 
 	c.status = c.runAller.RunAll(c.status)
 	return !c.status.HasFailed()
@@ -42,12 +78,12 @@ func (c *Command) Cont() (bool, error) {
 }
 
 // A wrapper for status.Interface.Fail
-func (c *Command) Kill() error {
+func (c *Command) Stop() error {
 	return c.status.Fail()
 }
 
 // TODO document
-func (c *Command) WhenTerminated() <-chan time.Time {
+func (c *Command) WhenStopped() <-chan time.Time {
 	ch := make(chan time.Time)
 	go func(ch chan<- time.Time) {
 		for c.status.ReadyRLock() && c.runAller.IsRunning() {
@@ -60,6 +96,8 @@ func (c *Command) WhenTerminated() <-chan time.Time {
 }
 
 // TODO document
-func (c *Command) Output() <-chan string {
-	return c.output
+func (c *Command) Output() []string {
+	var output []string
+	copy(output, c.logger.log)
+	return output
 }
