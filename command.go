@@ -71,12 +71,9 @@ func NewWithNOutputs(runAller sequence.RunAller, seqOut <-chan string, nOutputs 
 // false if there has been a failure.
 func (c *Command) Run(outCh chan<- string) bool {
 	go c.logger.listen(outCh)
-	go func(done <-chan time.Time, lg logger) {
-		<-done
-		lg.stop()
-	}(c.WhenStopped(), c.logger)
 
 	c.status = c.runAller.RunAll(c.status)
+	c.logger.stop()
 	return !c.status.HasFailed()
 }
 
@@ -93,19 +90,6 @@ func (c *Command) Cont() (bool, error) {
 // A wrapper for status.Interface.Fail
 func (c *Command) Stop() error {
 	return c.status.Fail()
-}
-
-// TODO document
-func (c *Command) WhenStopped() <-chan time.Time {
-	ch := make(chan time.Time)
-	go func(ch chan<- time.Time) {
-		for c.status.ReadyRLock() && c.runAller.IsRunning() {
-			c.status.RUnlock()
-		}
-		ch <- time.Now()
-		close(ch)
-	}((chan<- time.Time)(ch))
-	return (<-chan time.Time)(ch)
 }
 
 // TODO document

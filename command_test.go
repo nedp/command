@@ -50,10 +50,6 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	c := New(runAller, output)
 	runAller.On("RunAll", c.status).Return(c.status).Once()
 	runAller.duration = duration
-	if expectSuccess {
-		// Run -> WhenDone -> IsRunning
-		runAller.On("IsRunning").Return(false)
-	}
 
 	if !expectSuccess {
 		c.status.Fail()
@@ -69,6 +65,7 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	var wasSuccessful bool
 	select {
 	case wasSuccessful = <-ch:
+		// Okay
 	case <-fuse:
 		wasSuccessful = false
 	}
@@ -110,4 +107,33 @@ func TestNewLongFail(t *testing.T) {
 func TestNewLongSuccess(t *testing.T) {
 	t.Parallel()
 	testRun(t, true, longDuration)
+}
+
+func TestStop(t *testing.T) {
+	runAller := new(runAllerMock)
+	runAller.duration = longDuration
+
+	// There will be no output
+	seqOut := make(chan string)
+	close(seqOut)
+	c := New(runAller, seqOut)
+	runAller.On("RunAll", c.status).Return(c.status).Once()
+
+	// The command should be externally stopped.
+	cmdOut := make(chan string, 1)
+	go func() {
+		time.After(shortDuration)
+		c.Stop()
+	}()
+	start := time.Now()
+
+	wasSuccessful := c.Run(cmdOut)
+
+	// The command finishes as soon as it's,
+	// so it shouldn't finish early.
+	assert.InEpsilon(t, int(longDuration), int(time.Since(start)), 0.3,
+		"Stop delay was wrong")
+	assert.False(t, wasSuccessful, "c.Run didn't return false")
+
+	runAller.AssertExpectations(t)
 }
