@@ -26,23 +26,36 @@ type Pauser interface {
 
 type Stopper interface {
 	Stop() error
-	WhenStopped() <-chan Time.time
+	WhenStopped() <-chan time.Time
 }
 
 type Command struct {
 	status status.Interface
 	runAller sequence.RunAller
-	outputLog logger
+	logger logger
 }
 
-// TODO document
-func New(runAller sequence.RunAller, seqOut <-chan string, nOutputs int) Interface {
-	var lg logger
-	if nOutputs < 0 {
-		lg = newLogger(seqOut)
-	} else {
-		lg = newLoggerWithCap(seqOut, nOutputs)
-	}
+// New creates a new command object, initially allocating
+// the default amount of space for output.
+// If an estimate of of the number of outputs is available, use
+// NewWithNOutputs instead to more efficiently allocate.
+//
+// Returns
+// the new Command.
+func New(runAller sequence.RunAller, seqOut <-chan string) *Command {
+	lg := newLogger(seqOut)
+	return &Command{status.New(), runAller, lg}
+}
+
+// NewWithNOutputs creates a new command object, 
+// allocating space for the specified number of output strings.
+// If space for output runs out, more will be alocated automatically.
+//
+// Returns
+// the new Command.
+func NewWithNOutputs(runAller sequence.RunAller, seqOut <-chan string, nOutputs int,
+) *Command {
+	lg := newLoggerWithCap(seqOut, nOutputs)
 	return &Command{status.New(), runAller, lg}
 }
 
@@ -57,11 +70,11 @@ func New(runAller sequence.RunAller, seqOut <-chan string, nOutputs int) Interfa
 // true if the status is fine;
 // false if there has been a failure.
 func (c *Command) Run(outCh chan<- string) bool {
-	go c.lg.listen(outCh)
-	go func() {
-		<-c.WhenStopped()
+	go c.logger.listen(outCh)
+	go func(done <-chan time.Time, lg logger) {
+		<-done
 		lg.stop()
-	}(lg)
+	}(c.WhenStopped(), c.logger)
 
 	c.status = c.runAller.RunAll(c.status)
 	return !c.status.HasFailed()

@@ -50,6 +50,10 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	c := New(runAller, output)
 	runAller.On("RunAll", c.status).Return(c.status).Once()
 	runAller.duration = duration
+	if expectSuccess {
+		// Run -> WhenDone -> IsRunning
+		runAller.On("IsRunning").Return(false)
+	}
 
 	if !expectSuccess {
 		c.status.Fail()
@@ -71,7 +75,7 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	timeTaken := time.Since(start)
 
 	// Verify the time taken
-	assert.InEpsilon(t, int(duration), int(timeTaken), 0.1, "Unexpected delay")
+	assert.InEpsilon(t, int(duration), int(timeTaken), 0.2, "Unexpected delay")
 
 	// Verify result
 	assert.Equal(t, wasSuccessful, expectSuccess)
@@ -80,11 +84,12 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	runAller.AssertExpectations(t)
 
 	// Verify Output
-	assert.Equal(t, (<-chan string)(output), c.Output(),
-		"The wrong output channel was returned from c.Output")
+	assert.Equal(t, 0, len(c.Output()),
+		"Command produced outputs when expected not to.")
+	runAller.AssertExpectations(t)
 }
 
-const shortDuration = time.Duration(50) * time.Millisecond
+const shortDuration = time.Duration(500) * time.Millisecond
 const longDuration = time.Duration(2) * time.Second
 
 func TestNewFail(t *testing.T) {
