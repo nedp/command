@@ -63,8 +63,8 @@ func (pb PhaseBuilder) AlsoJust(fn func() error) PhaseBuilder {
 // Returns
 // a runnable `Sequence` object containing the specified
 // main function and sub-sequences.
-func (pb PhaseBuilder) End() Sequence {
-	return SequenceOf(pb).End()
+func (pb PhaseBuilder) End(output <-chan string) Sequence {
+	return SequenceOf(pb).End(output)
 }
 
 func (pb PhaseBuilder) finish() phase {
@@ -143,8 +143,8 @@ func (sb SequenceBuilder) ThenJust(fn func() error) SequenceBuilder {
 //
 // Returns
 // a runnable `Sequence` containing the specified phases.
-func (sb SequenceBuilder) End() Sequence {
-	return Sequence{make(chan bool, 1), sb.finish()}
+func (sb SequenceBuilder) End(output <-chan string) Sequence {
+	return Sequence{make(chan bool, 1), sb.finish(), output}
 }
 
 func (sb SequenceBuilder) finish() sequence {

@@ -26,6 +26,8 @@ import (
 type RunAller interface {
 	RunAll(status.Interface) status.Interface
 	IsRunning() bool
+
+	OutputChannel() <-chan string
 }
 
 // An object containing a series of computations to
@@ -33,6 +35,8 @@ type RunAller interface {
 type Sequence struct {
 	isRunning chan bool // buffered
 	sequence
+
+	output <-chan string
 }
 
 type sequence struct {
@@ -78,4 +82,11 @@ func (seq Sequence) IsRunning() bool {
 		seq.isRunning <- isRunning
 		return isRunning
 	}
+}
+
+// Returns
+// the output channel of the sequence.
+// TODO untested
+func (seq Sequence) OutputChannel() <-chan string {
+	return seq.output
 }

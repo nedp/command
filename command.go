@@ -39,20 +39,21 @@ type Command struct {
 //
 // Returns
 // the new Command.
-func New(runAller sequence.RunAller, seqOut <-chan string) *Command {
-	lg := newLogger(seqOut)
+func New(runAller sequence.RunAller) *Command {
+	lg := newLogger(runAller.OutputChannel())
 	return &Command{status.New(), runAller, lg}
 }
 
-// NewWithNOutputs creates a new command object, 
-// allocating space for the specified number of output strings.
-// If space for output runs out, more will be alocated automatically.
+// NewForOutLength creates a new command object, initially allocating
+// the specified number of strings for output.
+//
+// If running the command causes it to run out of output space,
+// more will be allocated.
 //
 // Returns
 // the new Command.
-func NewWithNOutputs(runAller sequence.RunAller, seqOut <-chan string, nOutputs int,
-) *Command {
-	lg := newLoggerWithCap(seqOut, nOutputs)
+func NewForOutLength(runAller sequence.RunAller, outLen int) *Command {
+	lg := newLoggerWithCap(runAller.OutputChannel(), outLen)
 	return &Command{status.New(), runAller, lg}
 }
 

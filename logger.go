@@ -11,7 +11,7 @@ const defaultCapacity = 8
 
 // Make a new logger with the default capacity, but specified channels.
 func newLogger(in <-chan string) logger {
-	return newLoggerWithCap(in, defaultCapacity)
+	return newLoggerWithCap(in, len(in))
 }
 
 // Make a new logger with specified capacity, and channels.

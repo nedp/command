@@ -23,6 +23,10 @@ func (ra *runAllerMock) RunAll(stat status.Interface) status.Interface {
 	return args.Get(0).(status.Interface)
 }
 
+func (ra *runAllerMock) OutputChannel() <-chan string {
+	return ra.Called().Get(0).(chan string)
+}
+
 func (ra *runAllerMock) IsRunning() bool {
 	args := ra.Called()
 	return args.Bool(0)
@@ -46,8 +50,9 @@ func testRun(t *testing.T, expectSuccess bool, duration time.Duration) {
 	// Set up the sequence mock according to parameters.
 	runAller := new(runAllerMock)
 	runAller.duration = duration
-	output := make(chan string)
-	c := New(runAller, output)
+	output := make(chan string, 0)
+	runAller.On("OutputChannel").Return(output).Once()
+	c := New(runAller)
 	runAller.On("RunAll", c.status).Return(c.status).Once()
 	runAller.duration = duration
 
@@ -112,11 +117,11 @@ func TestNewLongSuccess(t *testing.T) {
 func TestStop(t *testing.T) {
 	runAller := new(runAllerMock)
 	runAller.duration = longDuration
+	output := make(chan string, 0)
+	runAller.On("OutputChannel").Return(output).Once()
 
 	// There will be no output
-	seqOut := make(chan string)
-	close(seqOut)
-	c := New(runAller, seqOut)
+	c := New(runAller)
 	runAller.On("RunAll", c.status).Return(c.status).Once()
 
 	// The command should be externally stopped.
