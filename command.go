@@ -1,8 +1,6 @@
 package command
 
 import (
-	"time"
-
 	"bitbucket.org/nedp/command/status"
 	"bitbucket.org/nedp/command/sequence"
 )
@@ -26,7 +24,6 @@ type Pauser interface {
 
 type Stopper interface {
 	Stop() error
-	WhenStopped() <-chan time.Time
 }
 
 type Command struct {
@@ -97,4 +94,9 @@ func (c *Command) Output() []string {
 	var output []string
 	copy(output, c.logger.log)
 	return output
+}
+
+// A wrapper for sequence.IsRunnig
+func (c *Command) IsRunning() bool {
+	return c.runAller.IsRunning()
 }
