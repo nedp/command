@@ -15,6 +15,7 @@ type Interface interface {
 
 type Runner interface {
 	Run(chan<- string) bool
+	IsRunning() bool
 }
 
 type Pauser interface {
