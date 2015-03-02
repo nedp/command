@@ -22,16 +22,18 @@ func newLoggerWithCap(in <-chan string, capacity int) logger {
 // Record input and forward it to output, until input is closed,
 // or the logger is stopped.
 func (lg *logger) listen(out chan<- string) {
+	defer close(out)
 	for {
 		select {
-		case s := <-lg.in:
+		case s, ok := <-lg.in:
+			if !ok {
+				return
+			}
 			lg.log = append(lg.log, s)
 			out <- s
 		case <-lg.stopCh:
 			lg.stopCh <- struct{}{}
-			break
-		default:
-			break
+			return
 		}
 	}
 }
