@@ -9,50 +9,50 @@ import (
 func TestBuildBasic(t *testing.T) {
 	out := make(chan string, 1)
 	seq := SequenceOf(
-		Mainly(func() error {
+		PhaseOf(func() error {
 			out <- "A"
 			return nil
-		}).Also(
+		}).And(
 			SequenceOf(
-				Mainly(func() error {
+				PhaseOf(func() error {
 					out <- "A1"
 					return nil
-				}).Also(
+				}).And(
 					SequenceOf(
-						Mainly(func() error {
+						PhaseOf(func() error {
 							out <- "A1a"
 							return nil
 						}),
 					).Then(
-						Mainly(func() error {
+						PhaseOf(func() error {
 							out <- "A1b"
 							return nil
 						}),
 					),
 				),
 			),
-		).Also(
+		).And(
 			SequenceOf(
-				Mainly(func() error {
+				PhaseOf(func() error {
 					out <- "A2"
 					return nil
 				}),
 			),
 		),
 	).Then(
-		Mainly(func() error {
+		PhaseOf(func() error {
 			out <- "B"
 			return nil
-		}).Also(
+		}).And(
 			SequenceOf(
-				Mainly(func() error {
+				PhaseOf(func() error {
 					out <- "B1"
 					return nil
 				}),
 			),
-		).Also(
+		).And(
 			SequenceOf(
-				Mainly(func() error {
+				PhaseOf(func() error {
 					out <- "B2"
 					return nil
 				}),
@@ -66,15 +66,15 @@ func TestBuildBasic(t *testing.T) {
 func TestBuildingCompact(t *testing.T) {
 	out := make(chan string, 1)
 	seq := SequenceOf(
-		Mainly(func() error {
+		PhaseOf(func() error {
 			out <- "A"
 			return nil
-		}).Also(
+		}).And(
 			SequenceOf(
-				Mainly(func() error {
+				PhaseOf(func() error {
 					out <- "A1"
 					return nil
-				}).Also(
+				}).And(
 					FirstJust(func() error {
 						out <- "A1a"
 						return nil
@@ -84,18 +84,18 @@ func TestBuildingCompact(t *testing.T) {
 					}),
 				),
 			),
-		).AlsoJust(func() error {
+		).AndJust(func() error {
 			out <- "A2"
 			return nil
 		}),
 	).Then(
-		Mainly(func() error {
+		PhaseOf(func() error {
 			out <- "B"
 			return nil
-		}).AlsoJust(func() error {
+		}).AndJust(func() error {
 			out <- "B1"
 			return nil
-		}).AlsoJust(func() error {
+		}).AndJust(func() error {
 			out <- "B2"
 			return nil
 		}),
@@ -107,15 +107,15 @@ func TestBuildingCompact(t *testing.T) {
 func TestFailure(t *testing.T) {
 	out := make(chan string, 1)
 	seq := SequenceOf(
-		Mainly(func() error {
+		PhaseOf(func() error {
 			out <- "A"
 			return nil
-		}).Also(
+		}).And(
 			SequenceOf(
-				Mainly(func() error {
+				PhaseOf(func() error {
 					out <- "A1"
 					return errors.New("A failure")
-				}).Also(
+				}).And(
 					FirstJust(func() error {
 						out <- "A1a"
 						return nil
@@ -125,18 +125,18 @@ func TestFailure(t *testing.T) {
 					}),
 				),
 			),
-		).AlsoJust(func() error {
+		).AndJust(func() error {
 			out <- "A2"
 			return nil
 		}),
 	).Then(
-		Mainly(func() error {
+		PhaseOf(func() error {
 			out <- "B"
 			return nil
-		}).AlsoJust(func() error {
+		}).AndJust(func() error {
 			out <- "B1"
 			return nil
-		}).AlsoJust(func() error {
+		}).AndJust(func() error {
 			out <- "B2"
 			return nil
 		}),
@@ -147,15 +147,15 @@ func TestFailure(t *testing.T) {
 
 func TestFailureSinglePhase(t *testing.T) {
 	out := make(chan string, 1)
-	seq := Mainly(func() error {
+	seq := PhaseOf(func() error {
 			out <- "A"
 			return nil
-		}).Also(
+		}).And(
 			SequenceOf(
-				Mainly(func() error {
+				PhaseOf(func() error {
 					out <- "A1"
 					return nil
-				}).Also(
+				}).And(
 					FirstJust(func() error {
 						out <- "A1a"
 						return nil
@@ -165,7 +165,7 @@ func TestFailureSinglePhase(t *testing.T) {
 					}),
 				),
 			),
-	).Also(
+	).And(
 		FirstJust(func() error {
 			out <- "A2a"
 			return nil
@@ -186,13 +186,13 @@ func TestFailureSinglePhase(t *testing.T) {
 
 func TestShortSinglePhase(t *testing.T) {
 	out := make(chan string, 1)
-	seq := Mainly(func() error {
+	seq := PhaseOf(func() error {
 		out <- "A"
 		return nil
-	}).AlsoJust(func() error {
+	}).AndJust(func() error {
 		out <- "B"
 		return nil
-	}).AlsoJust(func() error {
+	}).AndJust(func() error {
 		out <- "C"
 		return nil
 	}).End(out)
@@ -202,55 +202,55 @@ func TestShortSinglePhase(t *testing.T) {
 
 func TestSinglePhase(t *testing.T) {
 	out := make(chan string, 1)
-	seq := Mainly(func() error {
+	seq := PhaseOf(func() error {
 		out <- "0"
 		return nil
-	}).Also(
+	}).And(
 		SequenceOf(
-			Mainly(func() error {
+			PhaseOf(func() error {
 				out <- "A"
 				return nil
-			}).Also(
+			}).And(
 				SequenceOf(
-					Mainly(func() error {
+					PhaseOf(func() error {
 						out <- "A1"
 						return nil
-					}).Also(
+					}).And(
 						SequenceOf(
-							Mainly(func() error {
+							PhaseOf(func() error {
 								out <- "A1a"
 								return nil
 							}),
 						).Then(
-							Mainly(func() error {
+							PhaseOf(func() error {
 								out <- "A1b"
 								return nil
 							}),
 						),
 					),
 				),
-			).Also(
+			).And(
 				SequenceOf(
-					Mainly(func() error {
+					PhaseOf(func() error {
 						out <- "A2"
 						return nil
 					}),
 				),
 			),
 		).Then(
-			Mainly(func() error {
+			PhaseOf(func() error {
 				out <- "B"
 				return nil
-			}).Also(
+			}).And(
 				SequenceOf(
-					Mainly(func() error {
+					PhaseOf(func() error {
 						out <- "B1"
 						return nil
 					}),
 				),
-			).Also(
+			).And(
 				SequenceOf(
-					Mainly(func() error {
+					PhaseOf(func() error {
 						out <- "B2"
 						return nil
 					}),
@@ -264,20 +264,20 @@ func TestSinglePhase(t *testing.T) {
 
 func TestCompactSinglePhase(t *testing.T) {
 	out := make(chan string, 1)
-	seq := Mainly(func() error {
+	seq := PhaseOf(func() error {
 		out <- "0"
 		return nil
-	}).Also(
+	}).And(
 		SequenceOf(
-			Mainly(func() error {
+			PhaseOf(func() error {
 				out <- "A"
 				return nil
-			}).Also(
+			}).And(
 				SequenceOf(
-					Mainly(func() error {
+					PhaseOf(func() error {
 						out <- "A1"
 						return nil
-					}).Also(
+					}).And(
 						FirstJust(func() error {
 							out <- "A1a"
 							return nil
@@ -287,18 +287,18 @@ func TestCompactSinglePhase(t *testing.T) {
 						}),
 					),
 				),
-			).AlsoJust(func() error {
+			).AndJust(func() error {
 				out <- "A2"
 				return nil
 			}),
 		).Then(
-			Mainly(func() error {
+			PhaseOf(func() error {
 				out <- "B"
 				return nil
-			}).AlsoJust(func() error {
+			}).AndJust(func() error {
 				out <- "B1"
 				return nil
-			}).AlsoJust(func() error {
+			}).AndJust(func() error {
 				out <- "B2"
 				return nil
 			}),

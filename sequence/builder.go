@@ -29,7 +29,7 @@ type PhaseBuilder struct {
 //
 // Returns
 // a phase builder with the specified main function.
-func Mainly(fn func() error) PhaseBuilder {
+func PhaseOf(fn func() error) PhaseBuilder {
 	return PhaseBuilder{fn, make([]sequence, 0, defaultNSequences)}
 }
 
@@ -39,7 +39,7 @@ func Mainly(fn func() error) PhaseBuilder {
 //
 // Returns
 // a copy of the reciever, but with the specified sequence added.
-func (pb PhaseBuilder) Also(sb SequenceBuilder) PhaseBuilder {
+func (pb PhaseBuilder) And(sb SequenceBuilder) PhaseBuilder {
 	seq := sb.finish()
 	return PhaseBuilder{
 		main: pb.main,
@@ -54,8 +54,8 @@ func (pb PhaseBuilder) Also(sb SequenceBuilder) PhaseBuilder {
 //
 // Returns
 // a copy of the reciever, but with `fn` added.
-func (pb PhaseBuilder) AlsoJust(fn func() error) PhaseBuilder {
-	return pb.Also(FirstJust(fn))
+func (pb PhaseBuilder) AndJust(fn func() error) PhaseBuilder {
+	return pb.And(FirstJust(fn))
 }
 
 // Finishes building so the computation may be run.
@@ -115,7 +115,7 @@ func SequenceOf(pb PhaseBuilder) SequenceBuilder {
 // Returns
 // a builder for a new sequence with a single phase containing `fn`.
 func FirstJust(fn func() error) SequenceBuilder {
-	return SequenceOf(Mainly(fn))
+	return SequenceOf(PhaseOf(fn))
 }
 
 // Appends a phase to a sequence.
@@ -136,7 +136,7 @@ func (sb SequenceBuilder) Then(pb PhaseBuilder) SequenceBuilder {
 // Returns
 // a copy of the reciever with a phase containing `fn` added.
 func (sb SequenceBuilder) ThenJust(fn func() error) SequenceBuilder {
-	return sb.Then(Mainly(fn))
+	return sb.Then(PhaseOf(fn))
 }
 
 // Finishes building so the computation may be run.
