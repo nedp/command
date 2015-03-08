@@ -10,7 +10,11 @@ type Interface interface {
 	Runner
 	Pauser
 	Stopper
+	State() State
 	Output() []string
+
+	// Name return's the command's assigned name.
+	Name() string
 }
 
 type Runner interface {
@@ -21,13 +25,16 @@ type Runner interface {
 type Pauser interface {
 	Pause() (bool, error)
 	Cont() (bool, error)
+	IsPaused() bool
 }
 
 type Stopper interface {
 	Stop() error
+	HasStopped() bool
 }
 
 type Command struct {
+	name string
 	status status.Interface
 	runAller sequence.RunAller
 	logger logger
@@ -40,9 +47,9 @@ type Command struct {
 //
 // Returns
 // the new Command.
-func New(runAller sequence.RunAller) *Command {
+func New(runAller sequence.RunAller, name string) *Command {
 	lg := newLogger(runAller.OutputChannel())
-	return &Command{status.New(), runAller, lg}
+	return &Command{name, status.New(), runAller, lg}
 }
 
 // NewForOutLength creates a new command object, initially allocating
@@ -53,9 +60,9 @@ func New(runAller sequence.RunAller) *Command {
 //
 // Returns
 // the new Command.
-func NewForOutLength(runAller sequence.RunAller, outLen int) *Command {
+func NewForOutLength(runAller sequence.RunAller, name string, outLen int) *Command {
 	lg := newLoggerWithCap(runAller.OutputChannel(), outLen)
-	return &Command{status.New(), runAller, lg}
+	return &Command{name, status.New(), runAller, lg}
 }
 
 // Run calls RunAll on the command's RunAller, having the
@@ -81,6 +88,11 @@ func (c *Command) Pause() (bool, error) {
 	return c.status.Pause()
 }
 
+// A wrapper for status.Interface.IsPaused
+func (c *Command) IsPaused() bool {
+	return c.status.IsPaused()
+}
+
 // A wrapper for status.Interface.Cont
 func (c *Command) Cont() (bool, error) {
 	return c.status.Cont()
@@ -89,6 +101,11 @@ func (c *Command) Cont() (bool, error) {
 // A wrapper for status.Interface.Fail
 func (c *Command) Stop() error {
 	return c.status.Fail()
+}
+
+// A wrapper for status.Interface.HasFailed
+func (c *Command) HasStopped() bool {
+	return c.status.HasFailed()
 }
 
 // TODO document
@@ -101,4 +118,28 @@ func (c *Command) Output() []string {
 // A wrapper for sequence.IsRunnig
 func (c *Command) IsRunning() bool {
 	return c.runAller.IsRunning()
+}
+
+type State struct {
+	IsPaused bool
+	IsRunning bool
+	HasStopped bool
+	Output []string
+}
+
+// State returns a threadsafe view of all externally visible
+// parts of the command's state.
+func (c *Command) State() State {
+	c.status.RLock()
+	defer c.status.RUnlock()
+	return State{
+		c.IsPaused(),
+		c.IsRunning(),
+		c.HasStopped(),
+		c.Output(),
+	}
+}
+
+func (c *Command) Name() string {
+	return c.name
 }

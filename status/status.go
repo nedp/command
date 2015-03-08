@@ -22,10 +22,12 @@ import (
 
 // Interface for managing and refering to a status.
 type Interface interface {
+	RLock()
 	ReadyRLock() bool
 	RUnlock()
 
 	Pause() (bool, error)
+	IsPaused() bool
 	Cont() (bool, error)
 	Fail() error
 	HasFailed() bool
@@ -94,6 +96,11 @@ func (s *Status) BoundCopy() Interface {
 	}
 }
 
+// Wrapper function for `sync.RWMutex.RLock()`
+func (s *Status) RLock() {
+	s.state.L.Lock()
+}
+
 // Acquires a read lock on the status when it is ready.
 //
 // 'Ready' means it is not paused, has not failed, and is not waiting.
@@ -128,7 +135,7 @@ func (s *Status) ReadyRLock() bool {
 	return true
 }
 
-// Wrapper function for `sync.RWMutex.Unlock()`
+// Wrapper function for `sync.RWMutex.RUnlock()`
 func (s *Status) RUnlock() {
 	s.state.L.Unlock()
 }
@@ -186,6 +193,13 @@ func (s *Status) Pause() (bool, error) {
 	s.state.isPaused = true
 	s.state.Broadcast()
 	return isPaused, nil
+}
+
+// TODO document
+func (s *Status) IsPaused() bool {
+	s.state.rw.RLock()
+	defer s.state.rw.RUnlock()
+	return s.state.isPaused
 }
 
 // Records a continuation, undoing a call to `Pause`.
