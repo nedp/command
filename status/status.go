@@ -187,7 +187,7 @@ func (s *Status) Pause() (bool, error) {
 	defer s.state.rw.Unlock()
 
 	if s.state.hasFailed {
-		return true, errors.New("Execution is stopped, but because a failure has occured.")
+		return true, errors.New("A failure already occured.")
 	}
 	isPaused := s.state.isPaused
 	s.state.isPaused = true
@@ -216,7 +216,7 @@ func (s *Status) Cont() (bool, error) {
 	defer s.state.rw.Unlock()
 
 	if s.state.hasFailed {
-		return false, errors.New("Couldn't continue; a failure has occured.")
+		return false, errors.New("A failure already occured.")
 	}
 	isPaused := s.state.isPaused
 	s.state.isPaused = false
