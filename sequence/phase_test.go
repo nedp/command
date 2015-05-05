@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"bitbucket.org/nedp/command/status"
+	"github.com/nedp/command/status"
 )
 
 const (

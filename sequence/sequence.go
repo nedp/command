@@ -18,7 +18,7 @@ but no new functions in the sequence will be called.
 package sequence
 
 import (
-	"bitbucket.org/nedp/command/status"
+	"github.com/nedp/command/status"
 )
 
 // An interface for running many computations 

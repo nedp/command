@@ -1,8 +1,8 @@
 package command
 
 import (
-	"bitbucket.org/nedp/command/status"
-	"bitbucket.org/nedp/command/sequence"
+	"github.com/nedp/command/status"
+	"github.com/nedp/command/sequence"
 )
 
 

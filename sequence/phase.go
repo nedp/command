@@ -2,7 +2,7 @@ package sequence
 
 
 import (
-	"bitbucket.org/nedp/command/status"
+	"github.com/nedp/command/status"
 )
 
 type runAller interface {

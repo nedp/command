@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	//"bitbucket.org/nedp/command/status"
+	//"github.com/nedp/command/status"
 
 	"github.com/stretchr/testify/assert"
 )
